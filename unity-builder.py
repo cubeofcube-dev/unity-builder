@@ -2,6 +2,17 @@
 import os
 import sys
 import time
+import shlex
+import argparse
+import subprocess
+import threading
+import re
+
+if sys.version_info >= (3, 7):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+else:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
 class Tail(object):
     def __init__(self, tailed_file):
         self.check_file_validity(tailed_file)
@@ -55,11 +66,7 @@ def tail(stop_event, filename, timeout=6):
     t.register_callback(log_reader)
     t.follow(stop_event)
 
-import shlex
-import argparse
-import subprocess
-import threading
-import re
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-logFile")
@@ -75,7 +82,7 @@ if __name__ == "__main__":
     th = threading.Thread(target=tail, args=(stop_event, parsed_args.logFile, ))
     th.start()
 
-    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8', errors='replace')
     try:
         while True:
             output = process.stdout.readline()
@@ -86,7 +93,6 @@ if __name__ == "__main__":
         stderr_output = process.stderr.read()
         if stderr_output:
             print(f"[Unity Process] Error: {stderr_output.strip()}")
-        pass
     except KeyboardInterrupt:
         print("Process interrupted by user")
     finally:
@@ -105,3 +111,4 @@ if __name__ == "__main__":
             number = int(m.group(1))
             print(number)
             sys.exit(number)
+    sys.exit(-1)
