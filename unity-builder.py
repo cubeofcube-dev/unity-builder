@@ -94,7 +94,7 @@ if __name__ == "__main__":
         if stderr_output:
             print(f"[Unity Process] Error: {stderr_output.strip()}")
     except KeyboardInterrupt:
-        print("Process interrupted by user")
+        print("[Unity Process] interrupted by user")
     finally:
         process.terminate()
         try:
@@ -102,13 +102,19 @@ if __name__ == "__main__":
         except subprocess.TimeoutExpired:
             process.kill()
 
+        return_code = process.returncode
+        print(f"[Unity Process] return code: {return_code}")
+
     stop_event.set()
     th.join()
     with open(parsed_args.logFile, 'r', encoding='utf-8', errors='replace') as file:
         text = file.read()
-        m = re.search(r'##### ExitCode\s*(\d+)', text)
-        if m:
-            number = int(m.group(1))
-            print(number)
-            sys.exit(number)
+        if re.search('DisplayProgressNotification: Build Successful', text):
+            sys.exit(0)
+
+        exit_codes = re.findall(r'ExitCode:\s*(\d+)', text)
+        exit_codes = list(map(int, exit_codes))
+        if exit_codes and all(code == 0 for code in exit_codes):
+            print('All exit codes are 0')
+            sys.exit(0)
     sys.exit(-1)
